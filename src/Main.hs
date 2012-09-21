@@ -23,14 +23,14 @@ loop vty = do buf <- get
               lift $ show_cursor (terminal vty)
               k <- lift $ next_event vty
               case k of
-                  EvKey KEsc [] -> lift $ shutdown vty 
-                  EvKey k [] -> do performAction k
-                                   b <- get
-                                   let (x,y) = cursorPosition $ bufferCursor b
-                                   lift $ set_cursor_pos (terminal vty) (fromIntegral x + 1) (fromIntegral y)
-                                   lift $ show_cursor (terminal vty)
-                                   loop vty
                   EvResize w h -> resizeBuffer w h >> loop vty
+                  EvKey KEsc [] -> lift $ shutdown vty 
+                  k@(EvKey c m) -> do performAction k
+                                      b <- get
+                                      let (x,y) = cursorPosition $ bufferCursor b
+                                      lift $ set_cursor_pos (terminal vty) (fromIntegral x + 1) (fromIntegral y)
+                                      lift $ show_cursor (terminal vty)
+                                      loop vty
                   _ -> loop vty
 
 display buf = foldr1 (<->) $ map (\x -> string current_attr (f x)) buf

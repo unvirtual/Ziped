@@ -35,19 +35,20 @@ actionMap DeleteBack     = deleteChar Bwd
 actionMap DeleteLine     = deleteLine Fwd
 actionMap DeleteLineBack = deleteLine Bwd
 
-specialKeys = M.fromList [ (KLeft,   MoveLeft)
-                         , (KRight,  MoveRight)
-                         , (KDown,   MoveDown)
-                         , (KUp,     MoveUp)
-                         , (KDel,    Delete)
-                         , (KBS,     DeleteBack)
-                         , (KEnter,  InsertLine)
+specialKeys = M.fromList [ (EvKey KLeft [],   MoveLeft)
+                         , (EvKey KRight [],  MoveRight)
+                         , (EvKey KDown [],   MoveDown)
+                         , (EvKey KUp [],     MoveUp)
+                         , (EvKey KDel [],    Delete)
+                         , (EvKey KBS [],     DeleteBack)
+                         , (EvKey KEnter [],  InsertLine)
+                         , (EvKey KEnter [MMeta],  InsertLineTop)
                          ]
 
-performAction :: (Monad m) => Key -> BufferST m ()
+performAction :: (Monad m) => Event -> BufferST m ()
 performAction k = maybe (return ()) (modifyCursor . actionMap) (translateKey k)
 
-translateKey :: Key -> Maybe Action
-translateKey (KASCII c) = Just $ Insert c
-translateKey k          = M.lookup k specialKeys
+translateKey :: Event -> Maybe Action
+translateKey (EvKey (KASCII c) []) = Just $ Insert c
+translateKey k                     = M.lookup k specialKeys
 
