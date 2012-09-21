@@ -46,25 +46,28 @@ buffer str title pt w h = Buffer crs title $ createView crs $ Rect pt w h
 bufferCursorPosition :: Buffer -> Point
 bufferCursorPosition = cursorPosition . bufferCursor
  
-modifyCursor :: (Monad m) => (TextCursor -> TextCursor) -> BufferST m ()
+modifyCursor :: (Monad m) => (TextCursor -> Maybe TextCursor) -> BufferST m Bool
 modifyCursor f = do
    st <- get
-   let newcrs = f $ bufferCursor st
-   let cpos = cursorPosition newcrs
-   let rect = viewRect $ bufferView st
-   if not $ pointInRect cpos rect
-      then do let newrect = getRect rect cpos
-              let newView = createView newcrs newrect
-              put (st { bufferCursor = newcrs, bufferView = newView } )
-      else put (st { bufferCursor = newcrs, bufferView = createView newcrs rect} )
+   case f $ bufferCursor st of
+      Nothing -> return False
+      Just newcrs -> do let cpos = cursorPosition newcrs
+                        let rect = viewRect $ bufferView st
+                        if not $ pointInRect cpos rect
+                           then do let newrect = getRect rect cpos
+                                   let newView = createView newcrs newrect
+                                   put (st { bufferCursor = newcrs, bufferView = newView } )
+                           else put (st { bufferCursor = newcrs, bufferView = createView newcrs rect} )
+                        return True
  
-resizeBuffer :: (Monad m) => Int -> Int -> BufferST m ()
+ 
+resizeBuffer :: (Monad m) => Int -> Int -> BufferST m Bool
 resizeBuffer w h = do
    st <- get
    let (Rect pt _ _) = viewRect $ bufferView st
    let crs = bufferCursor st
    put $ st { bufferView = createView crs $ Rect pt w h }
-   modifyCursor $ textMoveTo $ cursorPosition crs
+   modifyCursor $ textMoveToM $ cursorPosition crs
  
 inInterval :: Int -> (Int, Int) -> Bool
 inInterval z (x,y) = z >= x && z < y
