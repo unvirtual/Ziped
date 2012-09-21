@@ -61,7 +61,8 @@ instance CCursor String (Cursor Char Mark) where
     move Bwd (Cursor (xs :<-: x, lc, ys) i) = Just $ Cursor (xs, moveToOrEnd (index lc) $ toCursor x, fromCursor lc :->: ys) (i-1)
     move Bwd _ = Nothing
     
-    insert str n (Cursor (xs, lc, ys) i) = Cursor (xs :<-: fromCursor lc, toCursor str, ys) (i + 1)
+    insert str Bwd (Cursor (xs, lc, ys) i) = Cursor (xs, toCursor str, fromCursor lc :->: ys) i
+    insert str Fwd (Cursor (xs, lc, ys) i) = Cursor (xs :<-: fromCursor lc, toCursor str, ys) (i + 1)
     
     delete Fwd (Cursor (xs, c, y :->: ys) i) = Just $ Cursor (xs, c, ys) i
     delete Fwd _ = Nothing
@@ -105,7 +106,7 @@ endLine dir  = moveEnd dir
  
 insertLine :: Dir -> TextCursor -> TextCursor
 insertLine Fwd = insert [] Fwd 
-insertLine Bwd = insert [] Fwd . nextLine Bwd
+insertLine Bwd = insert [] Bwd 
  
 yankLine :: Dir -> String -> TextCursor -> TextCursor
 yankLine Fwd str = insert str Fwd 
