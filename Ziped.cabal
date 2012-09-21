@@ -1,0 +1,17 @@
+Name: Ziped
+Version: 0.0.1
+Cabal-Version: >= 1.8
+Author: unvirtual
+Synopsis: A simple editor based on zippers
+Build-type: Simple
+
+Library
+    hs-source-dirs: src
+    Build-Depends: base, mtl, containers, vty
+    Exposed-modules:
+        Buffer, Cursor, Editor, Main
+
+executable Ziped
+    main-is: Main.hs
+    hs-source-dirs: src
+    Build-Depends: base, mtl, containers, vty
