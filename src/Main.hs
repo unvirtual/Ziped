@@ -18,29 +18,22 @@ main = do
             
 loop vty = do buf <- get
               lift $ update vty $ pic_for_image (display $ viewVisible $ bufferView buf) 
-              let (x,y) = cursorPosition $ bufferCursor buf
-              lift $ set_cursor_pos (terminal vty) (fromIntegral x) (fromIntegral y)
-              lift $ show_cursor (terminal vty)
+              -- setCursor must come after update, otherwise cursor will be hidden!
+              setCursor vty
               k <- lift $ next_event vty
               case k of
-                  EvResize w h -> do resize <- resizeBuffer w h
-                                     when (resize) $
-                                           do b <- get
-                                              let (x,y) = cursorPosition $ bufferCursor b
-                                              lift $ set_cursor_pos (terminal vty) (fromIntegral x + 1) (fromIntegral y)
-                                              lift $ show_cursor (terminal vty)
-                                              loop vty
-                  EvKey KEsc [] -> lift $ shutdown vty 
-                  k@(EvKey c m) -> do performed <- performAction k
-                                      when (performed) $
-                                           do b <- get
-                                              let (x,y) = cursorPosition $ bufferCursor b
-                                              lift $ set_cursor_pos (terminal vty) (fromIntegral x + 1) (fromIntegral y)
-                                              lift $ show_cursor (terminal vty)
-                                              loop vty
-                  _ -> loop vty
+                  EvResize w h  -> resizeBuffer w h
+                  EvKey KEsc [] -> lift $ shutdown vty >> return True
+                  k@(EvKey c m) -> performAction k
+                  _             -> return False
+              loop vty
 
 display buf = foldr1 (<->) $ map (\x -> string current_attr (f x)) buf
     where f [] = " "
           f x = x
 
+setCursor vty  = do b <- get
+                    let (x,y) = cursorPosition $ bufferCursor b
+                    lift $ do show_cursor (terminal vty)
+                              set_cursor_pos (terminal vty) (fromIntegral x) (fromIntegral y)
+                                
