@@ -23,9 +23,7 @@ moveTo 0 _ crs = Just crs
 moveTo n dir crs = move dir crs >>= moveTo (n - 1) dir
 
 moveToOrEnd :: (CCursor a b) => Int -> Cursor a b -> Cursor a b
-moveToOrEnd n crs = go n (moveEnd Bwd crs)
-     where go 0 crs = crs
-           go n crs = maybe crs (go (n - 1)) (move Fwd crs)
+moveToOrEnd n crs = doOrEnd (moveTo n Fwd . moveEnd Bwd) (moveEnd Fwd crs)
 
 moveEnd :: (CCursor a b) => Dir -> Cursor a b -> Cursor a b
 moveEnd dir crs = maybe crs (moveEnd dir) (move dir crs)
@@ -85,7 +83,7 @@ textMoveTo (x,y) crs = fmap (moveToOrEnd x . moveEnd Bwd) selectedLine
     where selectedLine = moveToOrEnd y (moveEnd Bwd crs)
        
 cursorPosition :: TextCursor -> (Int, Int)
-cursorPosition crs = undefined
+cursorPosition crs = (index $ current crs, index crs)
  
 currentLine :: TextCursor -> LineCursor
 currentLine = current
