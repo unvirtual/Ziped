@@ -34,6 +34,13 @@ doOrEnd f crs = fromMaybe crs (return crs >>= f)
 instance Functor (Cursor a) where
     fmap f (Cursor (xs, lc, ys) i) = Cursor (xs, f lc, ys) i
 
+fmapM :: (LineCursor -> Maybe LineCursor) -> TextCursor -> Maybe TextCursor
+fmapM f (Cursor (xs, lc, ys) i) = f lc >>= \x -> Just $ Cursor (xs, x, ys) i
+
+fmapMM :: (LineCursor -> Maybe LineCursor) -> Maybe TextCursor -> Maybe TextCursor
+fmapMM f (Just (Cursor (xs, lc, ys) i)) = f lc >>= \x -> Just $ Cursor (xs, x, ys) i
+fmapMM f Nothing = Nothing
+
 data Mark = Mark deriving Show
 instance CCursor Char Mark where
     toCursor str = Cursor (RTip, Mark, flist str) 0
@@ -83,6 +90,10 @@ textMoveTo :: (Int, Int) -> TextCursor -> TextCursor
 textMoveTo (x,y) crs = fmap (moveToOrEnd x . moveEnd Bwd) selectedLine
     where selectedLine = moveToOrEnd y (moveEnd Bwd crs)
        
+textMoveToM :: (Int, Int) -> TextCursor -> Maybe TextCursor
+textMoveToM (x,y) crs = fmapMM (moveTo x Fwd . moveEnd Bwd) selectedLine
+    where selectedLine = moveTo y Fwd (moveEnd Bwd crs)
+
 cursorPosition :: TextCursor -> (Int, Int)
 cursorPosition crs = (index $ current crs, index crs)
  
