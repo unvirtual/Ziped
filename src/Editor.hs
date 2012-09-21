@@ -22,18 +22,18 @@ data Action = MoveLeft
 keyAction :: Key -> Action
 keyAction = undefined
 
-actionMap :: Action ->  (TextCursor -> TextCursor)
-actionMap MoveLeft       = nextChar Bwd
-actionMap MoveRight      = nextChar Fwd
-actionMap MoveUp         = nextLine Bwd
-actionMap MoveDown       = nextLine Fwd
-actionMap (Insert c)     = insertChar c Fwd
-actionMap InsertLine     = insertLine Fwd
-actionMap InsertLineTop  = insertLine Bwd
-actionMap Delete         = deleteChar Fwd
-actionMap DeleteBack     = deleteChar Bwd
-actionMap DeleteLine     = deleteLine Fwd
-actionMap DeleteLineBack = deleteLine Bwd
+actionMap :: Action ->  (TextCursor -> Maybe TextCursor)
+actionMap MoveLeft       = fmapM (move Bwd)
+actionMap MoveRight      = fmapM (move Fwd)
+actionMap MoveUp         = move Bwd
+actionMap MoveDown       = move Fwd
+actionMap (Insert c)     = Just . fmap (insert c Fwd)
+actionMap InsertLine     = Just . insert [] Fwd
+actionMap InsertLineTop  = Just . insert [] Bwd
+actionMap Delete         = fmapM (delete Fwd)
+actionMap DeleteBack     = fmapM (delete Bwd)
+actionMap DeleteLine     = delete Fwd
+actionMap DeleteLineBack = delete Bwd
 
 specialKeys = M.fromList [ (EvKey KLeft [],   MoveLeft)
                          , (EvKey KRight [],  MoveRight)
@@ -45,8 +45,8 @@ specialKeys = M.fromList [ (EvKey KLeft [],   MoveLeft)
                          , (EvKey KEnter [MMeta],  InsertLineTop)
                          ]
 
-performAction :: (Monad m) => Event -> BufferST m ()
-performAction k = maybe (return ()) (modifyCursor . actionMap) (translateKey k)
+performAction   :: (Monad m) => Event -> BufferST m Bool
+performAction k = maybe (return False) (\x -> modifyCursor (actionMap x) >> return True) (translateKey k)
 
 translateKey :: Event -> Maybe Action
 translateKey (EvKey (KASCII c) []) = Just $ Insert c
