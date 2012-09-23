@@ -57,9 +57,8 @@ buffer str title pt w h = Buffer { bufferCursor = textCursor str pt
                                  }
  
 modifyCursor :: (Monad m) => (TextCursor -> Maybe TextCursor) -> BufferST m Bool
-modifyCursor f = do get >>= \x -> maybe (return False) (\x -> setCursor x >> return True) (f $ bufferCursor x)
-    where setCursor crs = do modify (\x -> x { bufferCursor = crs })
-                             updateViewRect
+modifyCursor f = get >>= maybe (return False) (flip (>>) (return True) . setCursor) . f . bufferCursor
+    where setCursor crs = modify (\x -> x { bufferCursor = crs }) >> updateViewRect
 
 updateViewRect :: (Monad m) => BufferST m ()
 updateViewRect = modify (\x -> x { viewRect = updateRect (bufCursorPos x) (viewRect x) })
