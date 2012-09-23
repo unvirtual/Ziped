@@ -3,6 +3,7 @@ module Cursor where
 
 import Data.Maybe
 import Control.Monad
+import Control.Monad.Trans
 
 data Cursor a b = Cursor { cursor :: (RList a, b, FList a)
                          , index :: Int } deriving Show
@@ -34,12 +35,8 @@ doOrEnd f crs = fromMaybe crs (return crs >>= f)
 instance Functor (Cursor a) where
     fmap f (Cursor (xs, lc, ys) i) = Cursor (xs, f lc, ys) i
 
-fmapM :: (LineCursor -> Maybe LineCursor) -> TextCursor -> Maybe TextCursor
-fmapM f (Cursor (xs, lc, ys) i) = f lc >>= \x -> Just $ Cursor (xs, x, ys) i
-
-fmapMM :: (LineCursor -> Maybe LineCursor) -> Maybe TextCursor -> Maybe TextCursor
-fmapMM f (Just (Cursor (xs, lc, ys) i)) = f lc >>= \x -> Just $ Cursor (xs, x, ys) i
-fmapMM f Nothing = Nothing
+fmapM :: (CCursor a b) => (b -> Maybe b) -> Cursor a b -> Maybe (Cursor a b)
+fmapM f x = (f $ current x) >>= \z -> return $ fmap (const z) x
 
 data Mark = Mark deriving Show
 instance CCursor Char Mark where
@@ -91,7 +88,7 @@ textMoveTo (x,y) crs = fmap (moveToOrEnd x . moveEnd Bwd) selectedLine
     where selectedLine = moveToOrEnd y (moveEnd Bwd crs)
        
 textMoveToM :: (Int, Int) -> TextCursor -> Maybe TextCursor
-textMoveToM (x,y) crs = fmapMM (moveTo x Fwd . moveEnd Bwd) selectedLine
+textMoveToM (x,y) crs = selectedLine >>= fmapM (moveTo x Fwd . moveEnd Bwd)
     where selectedLine = moveTo y Fwd (moveEnd Bwd crs)
 
 cursorPosition :: TextCursor -> (Int, Int)
